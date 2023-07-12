@@ -34,7 +34,6 @@ def get_request(url, api_key=None, **kwargs ):
     status_code = response.status_code
     print("With status {} ".format(status_code))
     json_data = json.loads(response.text)
-    print(json_data)
     return json_data
 
 def get_dealers_from_cf(url, **kwargs):
@@ -53,8 +52,18 @@ def get_dealers_from_cf(url, **kwargs):
                                     st=dealer["st"], zip=dealer["zip"])
             results.append(dealer_obj)
     return results
-# Create a `post_request` to make HTTP POST requests
-# e.g., response = requests.post(url, params=kwargs, json=payload)
+
+def post_request(url, json_payload, **kwargs):
+    
+    try:
+        response = requests.post(url, json=json_payload, params=kwargs)
+        print("With status {} ".format(response.status_code))
+        json_data = json.loads(response.text)
+    except:
+        print("Network exception occurred")
+        return
+    return json_data
+
 
 
 
@@ -68,11 +77,13 @@ def get_dealer_reviews_from_cf(url):
     reviews = []
     if reviews_data:=get_request(url):
         for review in reviews_data:
+            sentiment = analyze_review_sentiments(review['review'])
+            sent_value = sentiment['sentiment']['document']['label']
             reviews_obj = DealerReview(id=review.get('id',"none"), name=review['name'], dealership=review['dealership'], \
                                        review=review['review'], purchase=review['purchase'], purchase_date=review['purchase_date'],\
                                         car_make=review['car_make'], car_model=review['car_model'], car_year=review['car_year'],\
-                                        sentiment="")
-            sentiment = analyze_review_sentiments(review['review'])
+                                        sentiment=sent_value)
+            
             reviews.append(reviews_obj)
     return reviews
 
