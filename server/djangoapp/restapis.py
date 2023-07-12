@@ -14,9 +14,10 @@ def get_request(url, api_key=None, **kwargs ):
         try:
             # Call get method of requests library with URL and parameters
             params = dict()
-            params["text"] = "Unsatisfactory"
+            params["text"] = kwargs["text"]
+            params["language"] ="en"
             #params["version"] =  '2022-04-07'
-            params["features"] = {"sentiment": { "Targets": ["good","satisfactory", "amazing"]}}
+            params["features"] = {"sentiment": { "Targets": ["good","satisfactory", "amazing","great"]}}
             params["keywords"] = {"emotion": True}
             response = requests.post(url, headers={'Content-Type': 'application/json'}, json=params,  auth=HTTPBasicAuth('apikey', api_key) )
             print(response.status_code)
@@ -83,7 +84,7 @@ def analyze_review_sentiments(review):
     text = {"text": review}
     api_key ="21K55zehKYLrpR7Kf4NJcNa9b4Q8fZ-sUK0vunhs8KnI"
     url = "https://api.au-syd.natural-language-understanding.watson.cloud.ibm.com/instances/31ec9a52-c2f7-48d2-b0e7-cd1237ce8783/v1/analyze?version=2019-07-12"
-    sentiment = get_request(url, api_key)
+    sentiment = get_request(url, api_key, **text)
   
     return sentiment
 # - Get the returned sentiment label such as Positive or Negative
