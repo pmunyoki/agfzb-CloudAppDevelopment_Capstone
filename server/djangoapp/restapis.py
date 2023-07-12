@@ -14,11 +14,12 @@ def get_request(url, api_key=None, **kwargs ):
         try:
             # Call get method of requests library with URL and parameters
             params = dict()
-            params["text"] = "love you"
-            params["version"] =  '2022-04-07'
-            params["features"] = 'features'
-            params["return_analyzed_text"] = False
-            response = requests.get(url, headers={'Content-Type': 'application/json'}, params=params,  auth=HTTPBasicAuth('apikey', api_key) )
+            params["text"] = "Unsatisfactory"
+            #params["version"] =  '2022-04-07'
+            params["features"] = {"sentiment": { "Targets": ["good","satisfactory", "amazing"]}}
+            params["keywords"] = {"emotion": True}
+            response = requests.post(url, headers={'Content-Type': 'application/json'}, json=params,  auth=HTTPBasicAuth('apikey', api_key) )
+            print(response.status_code)
         except:
             # If any error occurs
             print("Network exception occurred")
@@ -32,6 +33,7 @@ def get_request(url, api_key=None, **kwargs ):
     status_code = response.status_code
     print("With status {} ".format(status_code))
     json_data = json.loads(response.text)
+    print(json_data)
     return json_data
 
 def get_dealers_from_cf(url, **kwargs):
@@ -80,7 +82,7 @@ def get_dealer_reviews_from_cf(url):
 def analyze_review_sentiments(review):
     text = {"text": review}
     api_key ="21K55zehKYLrpR7Kf4NJcNa9b4Q8fZ-sUK0vunhs8KnI"
-    url = "https://api.au-syd.natural-language-understanding.watson.cloud.ibm.com/instances/31ec9a52-c2f7-48d2-b0e7-cd1237ce8783"
+    url = "https://api.au-syd.natural-language-understanding.watson.cloud.ibm.com/instances/31ec9a52-c2f7-48d2-b0e7-cd1237ce8783/v1/analyze?version=2019-07-12"
     sentiment = get_request(url, api_key)
   
     return sentiment
