@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
-# from .models import related models
+from .models import CarModel
 from .restapis import get_dealers_from_cf, get_dealer_reviews_from_cf, post_request
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
@@ -16,12 +16,13 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
-dealerships = []
 # Create an `about` view to render a static about page
 def about(request):
     return render(request, 'djangoapp/about.html')
 # ...
-
+def car_models(dealer_id):
+    models = CarModel.objects.filter(dealer_id=dealer_id)
+    return models
 
 # Create a `contact` view to return a static contact page
 def contact(request):
@@ -97,15 +98,16 @@ def get_dealer_details(request, dealer_id):
         context = {}
         url = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/review/?dealership={dealer_id}"
         reviews = get_dealer_reviews_from_cf(url)
-        print(reviews)
+        url2 = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get-dealership?id={dealer_id}"
+        dealership = get_dealers_from_cf(url2)[0]
         context['reviews']= reviews
-        for dealer in dealerships:
-            if dealer['id'] == dealer_id:
-                context['dealer']= dealer["full_name"]
+        context['dealer']= dealership
+       
         return render(request, 'djangoapp/dealer_details.html', context)
    
 # Create a `add_review` view to submit a review
 def add_review(request, dealer_id):
+    context = {}
     if request.user.is_authenticated:
         review = dict()
         review['name'] = "Upkar Lidder"
@@ -118,14 +120,21 @@ def add_review(request, dealer_id):
         review['car_year'] = "2016"
         data = dict()
         data['review'] = review
+        url2 = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get-dealership?id={dealer_id}"
         url = "https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/post"
+        models = car_models(dealer_id)
+        dealership = get_dealers_from_cf(url2)[0]
+        context['dealer'] = dealership.full_name
+        context['dealer_id'] = dealer_id
+        context['models'] = models
+
         response = post_request(url, data)
         if response:
             print("Your review was submitted successfully")
         else:
             print("not successful")
         
-    return HttpResponse(response)
+    return render(request, 'djangoapp/add_review.html', context)
         
         
 

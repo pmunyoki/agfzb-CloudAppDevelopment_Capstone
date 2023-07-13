@@ -12,27 +12,28 @@
 </head>
     <body>
     <!--Add review form here -->
-    <form action="{% url 'djangoapp:add_review' %}" method="post">
-        <div class="container"> <!--Style root div with .container class -->
-            {% csrf_token %}
-            <h1>Add a review about </h1>
-            <hr>
-            <div class="form-group"> <!--Style second div with .form-group class -->
-                <label for="content"><b>Enter the review content</b></label>
-                <textarea class="form-control" id="content" name="content" rows="2" required></textarea>
-                <input class="form-check-input" type="checkbox" name="purchasecheck" id="purchasecheck">
-                Has purchased the car from ? (select purchased car information below if checked)
-                <label for="car"><b>Enter the review content</b></label>
-                <select name="car" id="car" class="form-select" required>
-                    {% for car in cars %}
-                        <option selected value={{car.id}}>{{car.name}}-{{car.make.name}}-{{ car.year|date:"Y" }}</option>
-                    {% endfor %}
-                </select>
-                <label for="purchasedate"><b>First Name</b></label>
-                <input class="date-own form-control" type="text" name="purchasedate" id="purchasedate">
-                <button class="btn btn-primary" type="submit">Submit</button> 
+        <form action="{% url 'djangoapp:add_review' dealer_id %}" method="post">
+            <div class="container"> <!--Style root div with .container class -->
+                {% csrf_token %}
+                <h1>Add a review about <strong>{{dealer}}</strong></h1>
+                <div class="form-group"> <!--Style second div with .form-group class -->
+                    <label for="content"><b>Enter the review content</b></label>
+                    <textarea class="form-control" id="content" name="content" rows="2" required></textarea>
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" name="purchasecheck" id="purchasecheck">
+                    Has purchased the car from ? (select purchased car information below if checked)
+                    </label>
+                    <label for="car"><b>Enter the review content</b></label>
+                    <select name="car" id="car" class="form-select" required>
+                        {% for model in models %}
+                            <option selected value={{model.id}}>{{model.name}}-{{model.make.name}}-{{ model.year|date:"Y" }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="purchasedate"><b>First Name</b></label>
+                    <input class="date-own form-control" type="text" name="purchasedate" id="purchasedate">
+                    <button class="btn btn-primary" type="submit">Submit</button> 
+                </div>
             </div>
-        </div>
-    </form>
+        </form>
     </body>
 </html>

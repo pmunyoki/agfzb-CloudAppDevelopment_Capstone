@@ -51,6 +51,7 @@ def get_dealers_from_cf(url, **kwargs):
                                     short_name=dealer["short_name"],
                                     st=dealer["st"], zip=dealer["zip"])
             results.append(dealer_obj)
+    
     return results
 
 def post_request(url, json_payload, **kwargs):
