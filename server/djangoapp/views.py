@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
-from .models import CarModel
+from .models import CarModel, CarMake
 from .restapis import get_dealers_from_cf, get_dealer_reviews_from_cf, post_request
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
@@ -21,8 +21,14 @@ def about(request):
     return render(request, 'djangoapp/about.html')
 # ...
 def car_models(dealer_id):
-    models = CarModel.objects.filter(dealer_id=dealer_id)
+    models = CarModel.objects.filter(dealer_id=dealer_id).all()
+    print(models)
     return models
+
+def get_carmake(id):
+    carmake = get_object_or_404(CarMake, pk=id)
+    print(carmake)
+    return carmake
 
 # Create a `contact` view to return a static contact page
 def contact(request):
@@ -102,6 +108,7 @@ def get_dealer_details(request, dealer_id):
         dealership = get_dealers_from_cf(url2)[0]
         context['reviews']= reviews
         context['dealer']= dealership
+
        
         return render(request, 'djangoapp/dealer_details.html', context)
    
@@ -109,30 +116,44 @@ def get_dealer_details(request, dealer_id):
 def add_review(request, dealer_id):
     context = {}
     if request.user.is_authenticated:
-        review = dict()
-        review['name'] = "Upkar Lidder"
-        review['dealership'] = dealer_id
-        review['review'] = "Poor service"
-        review['purchase'] = "False"
-        review['purchase_date'] = "02/16/2021"
-        review['car_make'] = "Audi"
-        review['car_model'] = "car"
-        review['car_year'] = "2016"
-        data = dict()
-        data['review'] = review
-        url2 = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get-dealership?id={dealer_id}"
-        url = "https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/post"
-        models = car_models(dealer_id)
-        dealership = get_dealers_from_cf(url2)[0]
-        context['dealer'] = dealership.full_name
-        context['dealer_id'] = dealer_id
-        context['models'] = models
+        if request.method == 'GET':
+            url2 = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get-dealership?id={dealer_id}"
+            url = "https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/post"
+            models = car_models(dealer_id)
+            dealership = get_dealers_from_cf(url2)[0]
+            context['dealer'] = dealership.full_name
+            context['dealer_id'] = dealer_id
+            context['models'] = models
 
-        response = post_request(url, data)
-        if response:
-            print("Your review was submitted successfully")
-        else:
-            print("not successful")
+        if request.method == 'POST': 
+            car_model_id= request.POST['car']
+            car = get_object_or_404(CarModel, pk=car_model_id)
+            print(f"purchase check {request.POST['purchasecheck']} ")
+            if request.POST['purchasecheck'] == 'on':
+                purchase = True
+            else:
+                purchase  = False
+            review = dict()
+            review['name'] = "Upkar Lidder"
+            review['dealership'] = dealer_id
+            review['review'] = request.POST['content']
+            review['purchase'] = purchase
+            review['purchase_date'] = request.POST['purchasedate']
+            review['car_make'] = car.car_make.name
+            review['car_model'] = car.name
+            review['car_year'] = car.year.strftime("%Y") 
+            data = dict()
+            data['review'] = review
+            url = "https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/post"
+            context['dealer_id'] = dealer_id
+
+            response = post_request(url, data)
+            if response:
+                context['message'] = "Your review has been submitted successfully "
+            else:
+                context['error'] = "An error occured during submision. Please try again later!"
+          
+                
         
     return render(request, 'djangoapp/add_review.html', context)
         
