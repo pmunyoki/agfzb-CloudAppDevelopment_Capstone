@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from .models import CarModel, CarMake
-from .restapis import get_dealers_from_cf, get_dealer_reviews_from_cf, post_request
+from .restapis import get_dealers_from_cf, get_dealer_reviews_from_cf, post_request, get_request
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from datetime import datetime
@@ -14,12 +14,9 @@ import json
 logger = logging.getLogger(__name__)
 
 
-# Create your views here.
-
-# Create an `about` view to render a static about page
 def about(request):
     return render(request, 'djangoapp/about.html')
-# ...
+
 def car_models(dealer_id):
     models = CarModel.objects.filter(dealer_id=dealer_id).all()
     print(models)
@@ -30,11 +27,9 @@ def get_carmake(id):
     print(carmake)
     return carmake
 
-# Create a `contact` view to return a static contact page
 def contact(request):
     return render(request, 'djangoapp/contact.html')
 
-# Create a `login_request` view to handle sign in request
 def login_request(request):
     context = {}
     if request.method == "POST":
@@ -50,15 +45,11 @@ def login_request(request):
     else:
         return render(request, 'djangoapp/index.html')
 
-# ...
 
-# Create a `logout_request` view to handle sign out request
 def logout_request(request):
     logout(request)
     return redirect('djangoapp:index')
-# ...
 
-# Create a `registration_request` view to handle sign up request
 def registration_request(request):
     context = {}
     if request.method == 'GET':
@@ -82,54 +73,47 @@ def registration_request(request):
         else:
             context['message'] = "User already exists."
             return render(request, 'djangoapp/registration.html', context)
-# ...
 
-# Update the `get_dealerships` view to render the index page with a list of dealerships
 def get_dealerships(request):
     if request.method == "GET":
         context = {}
         url = "https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get-dealership"
-        # Get dealers from the URL
         dealerships = get_dealers_from_cf(url)
-        # Concat all dealer's short name
         context['dealerships']=dealerships
 
         return render(request, 'djangoapp/index.html', context)
     
 
+def get_dealer_by_id(dealer_id):
+    url = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get_dealership_by_id?id={dealer_id}"
+    dealer = get_request(url)
+    return dealer
 
-# Create a `get_dealer_details` view to render the reviews of a dealer
 def get_dealer_details(request, dealer_id):
     if request.method == 'GET':
         context = {}
         url = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/review/?dealership={dealer_id}"
         reviews = get_dealer_reviews_from_cf(url)
-        url2 = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get-dealership?id={dealer_id}"
-        dealership = get_dealers_from_cf(url2)[0]
+        dealership = get_dealer_by_id(dealer_id)[0]
         context['reviews']= reviews
         context['dealer']= dealership
 
        
         return render(request, 'djangoapp/dealer_details.html', context)
    
-# Create a `add_review` view to submit a review
 def add_review(request, dealer_id):
     context = {}
     if request.user.is_authenticated:
         if request.method == 'GET':
-            url2 = f"https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/dealership-package/get-dealership?id={dealer_id}"
             url = "https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/post"
             models = car_models(dealer_id)
-            dealership = get_dealers_from_cf(url2)[0]
-            context['dealer'] = dealership.full_name
+            dealership = get_dealer_by_id(dealer_id)[0]
+            context['dealer'] = dealership["full_name"]
             context['dealer_id'] = dealer_id
             context['models'] = models
 
         if request.method == 'POST': 
-            car_model_id= request.POST['car']
-            car = get_object_or_404(CarModel, pk=car_model_id)
-            print(f"purchase check {request.POST['purchasecheck']} ")
-            if request.POST['purchasecheck'] == 'on':
+            if request.POST.get('purchasecheck', False):
                 purchase = True
             else:
                 purchase  = False
@@ -138,10 +122,13 @@ def add_review(request, dealer_id):
             review['dealership'] = dealer_id
             review['review'] = request.POST['content']
             review['purchase'] = purchase
-            review['purchase_date'] = request.POST['purchasedate']
-            review['car_make'] = car.car_make.name
-            review['car_model'] = car.name
-            review['car_year'] = car.year.strftime("%Y") 
+            if purchase == True:
+                car_model_id= request.POST['car']
+                car = get_object_or_404(CarModel, pk=car_model_id)
+                review['purchase_date'] = request.POST['purchasedate']
+                review['car_make'] = car.car_make.name
+                review['car_model'] = car.name
+                review['car_year'] = car.year.strftime("%Y") 
             data = dict()
             data['review'] = review
             url = "https://us-south.functions.appdomain.cloud/api/v1/web/0e19a713-5cb0-469a-9d5d-33bd21ae8720/review/post"
@@ -152,16 +139,6 @@ def add_review(request, dealer_id):
                 context['message'] = "Your review has been submitted successfully "
             else:
                 context['error'] = "An error occured during submision. Please try again later!"
-          
-                
-        
+             
     return render(request, 'djangoapp/add_review.html', context)
-        
-        
-
-        #else:
-            #print("Please log in to post a review")
-
-
-...
-
+    
